@@ -26,10 +26,7 @@ void RegisterComponents()
 	builder.RegisterGeneric(typeof(Repository<>)).AsImplementedInterfaces();
 	builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => 
 		t.Name.EndsWith("Factory") && (t.GetCustomAttributes(typeof(ObsoleteAttribute)).FirstOrDefault() == null))
-		.AsImplementedInterfaces();
-	
-	//override codesource with new version
-	//builder.RegisterType<CodeSourceV2Factory>().As<IFactory<CodeSource>>();
+		.AsImplementedInterfaces();	
 
 	if (IsTest)
 	{
