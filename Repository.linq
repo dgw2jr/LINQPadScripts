@@ -24,10 +24,12 @@ void RegisterComponents()
 	var builder = new ContainerBuilder();
 	builder.RegisterGeneric(typeof(LocalDbConnector<>)).AsImplementedInterfaces();
 	builder.RegisterGeneric(typeof(Repository<>)).AsImplementedInterfaces();
-	builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => t.Name.EndsWith("Factory")).AsImplementedInterfaces();
+	builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(t => 
+		t.Name.EndsWith("Factory") && (t.GetCustomAttributes(typeof(ObsoleteAttribute)).FirstOrDefault() == null))
+		.AsImplementedInterfaces();
 	
 	//override codesource with new version
-	builder.RegisterType<CodeSourceV1Factory>().As<IFactory<CodeSource>>();
+	//builder.RegisterType<CodeSourceV2Factory>().As<IFactory<CodeSource>>();
 
 	if (IsTest)
 	{
@@ -65,6 +67,7 @@ public interface IFactory<T>
 	T Create(IDataReader result);
 }
 
+[Obsolete]
 public class CodeSourceV1Factory : CodeSourceFactory
 {
 	public override string Catalog
