@@ -13,27 +13,26 @@ IContainer GetContainer()
 	var builder = new ContainerBuilder();
 
 	builder.RegisterGeneric(typeof(EntityBuilder<>)).AsImplementedInterfaces();
-	builder.RegisterType<PartnersAndAddresses>().AsImplementedInterfaces();
+	builder.RegisterType<Partners>().AsImplementedInterfaces();
+	builder.RegisterType<PartnersWithAddresses>().AsImplementedInterfaces();
 	builder.RegisterType<PartnersWithPhones>().AsImplementedInterfaces();
 
 	return builder.Build();
 }
 
-interface IQuery<TResult>
+interface IEntityComponent<TResult>
 {
 	IEnumerable<TResult> Execute(IEnumerable<TResult> seed);
 }
 
-class PartnersAndAddresses : IQuery<IndividualPartner>
+class Partners : IEntityComponent<IndividualPartner>
 {
 	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
 	{
-		return GetPartners().Joiner<IndividualPartnerInformation, AddressInformation, IndividualPartner>
-		((a, b) => new IndividualPartner(a, b.ToImmutableArray(), ImmutableArray<PhoneNumber>.Empty, 0))
-		(GetAddresses());
+		return GetPartners().Select(p => new IndividualPartner(p, ImmutableArray.Create<AddressInformation>(), ImmutableArray.Create<PhoneNumber>(), 0));
 	}
 
-	public IEnumerable<IndividualPartnerInformation> GetPartners()
+	private IEnumerable<IndividualPartnerInformation> GetPartners()
 	{
 		return new List<IndividualPartnerInformation>
 	{
@@ -42,6 +41,18 @@ class PartnersAndAddresses : IQuery<IndividualPartner>
 		new IndividualPartnerInformation(3, "Vern", "", "", "W", "", "", "en-US", false, false, true)
 	}.ToImmutableArray();
 	}
+}
+
+class PartnersWithAddresses : IEntityComponent<IndividualPartner>
+{
+	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
+	{
+		return seed.Joiner<IndividualPartner, AddressInformation, IndividualPartner>
+		((a, b) => new IndividualPartner(a, b.ToImmutableArray(), ImmutableArray<PhoneNumber>.Empty, 0))
+		(GetAddresses());
+	}
+
+	
 	public IEnumerable<AddressInformation> GetAddresses()
 	{
 		return new List<AddressInformation>
@@ -53,7 +64,7 @@ class PartnersAndAddresses : IQuery<IndividualPartner>
 	}
 }
 
-class PartnersWithPhones : IQuery<IndividualPartner>
+class PartnersWithPhones : IEntityComponent<IndividualPartner>
 {
 	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
 	{
@@ -80,9 +91,9 @@ interface IEntityBuilder<TType>
 
 class EntityBuilder<TType> : IEntityBuilder<TType>
 {
-	private readonly IEnumerable<IQuery<TType>> _components;
+	private readonly IEnumerable<IEntityComponent<TType>> _components;
 
-	public EntityBuilder(IEnumerable<IQuery<TType>> components)
+	public EntityBuilder(IEnumerable<IEntityComponent<TType>> components)
 	{
 		_components = components;
 	}
@@ -143,8 +154,6 @@ public sealed class IndividualPartnerInformation : IHasCustomerId
 		string suffix,
 		string email,
 		string culture,
-		bool monsantoUnauthorizedGrower,
-		bool pioneerUnauthorizedGrower,
 		bool isPrimaryDecisionMaker)
 	{
 		this.customerId = customerId;
@@ -155,8 +164,6 @@ public sealed class IndividualPartnerInformation : IHasCustomerId
 		this.Suffix = suffix;
 		this.Email = email;
 		this.Culture = culture;
-		this.MonsantoUnauthorizedGrower = monsantoUnauthorizedGrower;
-		this.PioneerUnauthorizedGrower = pioneerUnauthorizedGrower;
 		this.IsPrimaryDecisionMaker = isPrimaryDecisionMaker;
 	}
 
@@ -169,7 +176,7 @@ public sealed class IndividualPartnerInformation : IHasCustomerId
 	{
 		get
 		{
-			return new IndividualPartnerInformation(0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, false, false, false);
+			return new IndividualPartnerInformation(0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, false);
 		}
 	}
 }
