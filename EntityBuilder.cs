@@ -14,8 +14,8 @@ IContainer GetContainer()
 
 	builder.RegisterGeneric(typeof(EntityBuilder<>)).AsImplementedInterfaces();
 	builder.RegisterType<Partners>().AsImplementedInterfaces();
-	builder.RegisterType<PartnersWithAddresses>().AsImplementedInterfaces();
-	builder.RegisterType<PartnersWithPhones>().AsImplementedInterfaces();
+	builder.RegisterType<PartnersAddresses>().AsImplementedInterfaces();
+	builder.RegisterType<PartnersPhones>().AsImplementedInterfaces();
 
 	return builder.Build();
 }
@@ -25,9 +25,14 @@ interface IEntityComponent<TResult>
 	IEnumerable<TResult> Execute(IEnumerable<TResult> seed);
 }
 
-class Partners : IEntityComponent<IndividualPartner>
+interface IEntitySeed<TResult>
 {
-	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
+	IEnumerable<TResult> Execute();
+}
+
+class Partners : IEntitySeed<IndividualPartner>
+{
+	public IEnumerable<IndividualPartner> Execute()
 	{
 		return GetPartners().Select(p => new IndividualPartner(p, ImmutableArray.Create<AddressInformation>(), ImmutableArray.Create<PhoneNumber>(), 0));
 	}
@@ -35,15 +40,15 @@ class Partners : IEntityComponent<IndividualPartner>
 	private IEnumerable<IndividualPartnerInformation> GetPartners()
 	{
 		return new List<IndividualPartnerInformation>
-	{
-		new IndividualPartnerInformation(1, "Don", "", "", "W", "", "", "en-US", false, false, true),
-		new IndividualPartnerInformation(2, "Kyla", "", "", "W", "", "", "en-US", false, false, true),
-		new IndividualPartnerInformation(3, "Vern", "", "", "W", "", "", "en-US", false, false, true)
-	}.ToImmutableArray();
+		{
+			new IndividualPartnerInformation(1, "Don", "", "", "W", "", "", "en-US", true),
+			new IndividualPartnerInformation(2, "Kyla", "", "", "W", "", "", "en-US", true),
+			new IndividualPartnerInformation(3, "Vern", "", "", "W", "", "", "en-US", true)
+		}.ToImmutableArray();
 	}
 }
 
-class PartnersWithAddresses : IEntityComponent<IndividualPartner>
+class PartnersAddresses : IEntityComponent<IndividualPartner>
 {
 	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
 	{
@@ -64,7 +69,7 @@ class PartnersWithAddresses : IEntityComponent<IndividualPartner>
 	}
 }
 
-class PartnersWithPhones : IEntityComponent<IndividualPartner>
+class PartnersPhones : IEntityComponent<IndividualPartner>
 {
 	public IEnumerable<IndividualPartner> Execute(IEnumerable<IndividualPartner> seed)
 	{
@@ -91,17 +96,21 @@ interface IEntityBuilder<TType>
 
 class EntityBuilder<TType> : IEntityBuilder<TType>
 {
+	private readonly IEntitySeed<TType> _seed;
 	private readonly IEnumerable<IEntityComponent<TType>> _components;
 
-	public EntityBuilder(IEnumerable<IEntityComponent<TType>> components)
+	public EntityBuilder(
+		IEntitySeed<TType> seed,
+		IEnumerable<IEntityComponent<TType>> components)
 	{
+		_seed = seed;
 		_components = components;
 	}
 
 	public IEnumerable<TType> Build()
 	{
 		return this._components
-			.Aggregate(new List<TType>(), (seed, curr) => curr.Execute(seed).ToList());
+			.Aggregate(_seed.Execute(), (seed, curr) => curr.Execute(seed).ToList());
 	}
 }
 
