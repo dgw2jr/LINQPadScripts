@@ -90,13 +90,7 @@ class EntityBuilder<TType> : IEntityBuilder<TType>
 	public IEnumerable<TType> Build()
 	{
 		return this._components
-			.Aggregate(new List<TType>(), (seed, curr) =>
-			{
-				var x = seed.ToList();
-				var r = curr.Execute(x);
-				seed.AddRange(r);
-				return r.ToList();
-			});
+			.Aggregate(new List<TType>(), (seed, curr) => curr.Execute(seed).ToList());
 	}
 }
 
