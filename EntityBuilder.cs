@@ -139,10 +139,6 @@ public sealed class IndividualPartnerInformation : IHasCustomerId
 
 	public readonly string Culture;
 
-	public readonly bool MonsantoUnauthorizedGrower;
-
-	public readonly bool PioneerUnauthorizedGrower;
-
 	public readonly bool IsPrimaryDecisionMaker;
 
 	internal IndividualPartnerInformation(
